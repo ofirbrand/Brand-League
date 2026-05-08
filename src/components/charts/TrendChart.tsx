@@ -21,13 +21,18 @@ type Series = {
 
 type Props = {
   series: Series;
-  /** Format the y-axis tick labels — e.g. "5.2 km" or "8,400". */
-  yFormatter: (n: number) => string;
+  /** Serializable formatter choice; functions cannot cross the server/client boundary. */
+  valueFormat: "integer" | "oneDecimalPercent";
   /** y=0 reference line — used for weight loss%. */
   showZeroBaseline?: boolean;
 };
 
-export function TrendChart({ series, yFormatter, showZeroBaseline }: Props) {
+export function TrendChart({ series, valueFormat, showZeroBaseline }: Props) {
+  const yFormatter =
+    valueFormat === "oneDecimalPercent"
+      ? (n: number) => `${n.toFixed(1)}%`
+      : (n: number) => n.toLocaleString();
+
   // Merge mine/family into a unified per-week dataset for Recharts.
   const allWeeks = new Set<string>();
   for (const p of series.mine) allWeeks.add(p.week_start);

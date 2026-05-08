@@ -72,19 +72,19 @@ export default async function ProfilePage() {
         <ChartCard title="Steps per week" emoji="👟">
           <TrendChart
             series={trends.steps}
-            yFormatter={(n) => n.toLocaleString()}
+            valueFormat="integer"
           />
         </ChartCard>
         <ChartCard title="Running km per week" emoji="🏃">
           <TrendChart
             series={trends.running}
-            yFormatter={(n) => `${n.toFixed(0)}`}
+            valueFormat="integer"
           />
         </ChartCard>
         <ChartCard title="Weight loss % per week" emoji="⚖️">
           <TrendChart
             series={trends.weight}
-            yFormatter={(n) => `${n.toFixed(1)}%`}
+            valueFormat="oneDecimalPercent"
             showZeroBaseline
           />
         </ChartCard>
