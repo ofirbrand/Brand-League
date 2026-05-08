@@ -1,0 +1,18 @@
+# Brand Sport League — Supabase project config
+# Used by `supabase link` / `supabase db push`. The `project_id` placeholder
+# below is overwritten when you run `npx supabase link --project-ref <ref>`.
+
+project_id = "brand-sport-league"
+
+[db.seed]
+# Apply seed.sql automatically after `supabase db reset` in local dev.
+sql_paths = ["./seed.sql"]
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://brand-sport-league.vercel.app"]
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true

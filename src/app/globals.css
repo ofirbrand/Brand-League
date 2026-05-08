@@ -1,26 +1,151 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Brand Sport League custom palette */
+  --color-gold: var(--gold);
+  --color-silver: var(--silver);
+  --color-bronze: var(--bronze);
+  --color-you: var(--you);
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * Brand Sport League is dark-only. We define the palette under :root so it
+ * applies regardless of whether `.dark` is present, and we keep `.dark` as a
+ * no-op alias so shadcn primitives that default to dark-only behavior still
+ * resolve correctly.
+ */
+:root {
+  /* Stadium-night base */
+  --navy-deep: #050d1c;
+  --navy: #0A1628;
+
+  /* Trophy palette */
+  --gold: #FFD700;
+  --silver: #C0C0C0;
+  --bronze: #CD7F32;
+  --you: #22C55E;
+
+  /* Surface tokens */
+  --background: var(--navy-deep);
+  --foreground: oklch(0.97 0.01 240);
+
+  --card: #122036;
+  --card-foreground: oklch(0.97 0.01 240);
+  --popover: #16263d;
+  --popover-foreground: oklch(0.97 0.01 240);
+
+  --primary: var(--gold);
+  --primary-foreground: #0A1628;
+  --secondary: #1c2c44;
+  --secondary-foreground: oklch(0.97 0.01 240);
+  --muted: #1c2c44;
+  --muted-foreground: oklch(0.7 0.02 240);
+  --accent: #1c2c44;
+  --accent-foreground: var(--gold);
+  --destructive: #EF4444;
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: var(--gold);
+
+  /* Chart colors: gold for "you", soft navy for family-avg */
+  --chart-1: var(--gold);
+  --chart-2: oklch(0.7 0.04 240);
+  --chart-3: var(--you);
+  --chart-4: var(--bronze);
+  --chart-5: var(--silver);
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* No-op: BSL is dark-only, but shadcn components reference `.dark` */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground;
+    background-image: radial-gradient(
+        ellipse 1200px 600px at 50% -10%,
+        rgba(255, 215, 0, 0.08),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 800px 600px at 100% 100%,
+        rgba(34, 197, 94, 0.04),
+        transparent 60%
+      );
+    background-attachment: fixed;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Podium plinth gradients */
+.plinth-gold {
+  background: linear-gradient(180deg, #fff3a8 0%, #ffd700 45%, #b8860b 100%);
+}
+.plinth-silver {
+  background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 45%, #6e6e6e 100%);
+}
+.plinth-bronze {
+  background: linear-gradient(180deg, #f4c89c 0%, #cd7f32 45%, #6b3a14 100%);
+}
+
+/* Subtle floating animation for ghost slots */
+@keyframes ghost-float {
+  0%, 100% { transform: translateY(0); opacity: 0.45; }
+  50% { transform: translateY(-3px); opacity: 0.6; }
+}
+.ghost-slot {
+  animation: ghost-float 3s ease-in-out infinite;
 }
