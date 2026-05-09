@@ -118,7 +118,7 @@ function Winner({
       </div>
       <div
         className={cn(
-          "truncate font-bold",
+          "line-clamp-2 text-center font-bold leading-tight break-words",
           compact ? "max-w-[52px] text-[10px]" : "max-w-[80px] text-[11px]",
         )}
       >
