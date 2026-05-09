@@ -1,6 +1,6 @@
 "use client";
 
-import { Footprints, PersonStanding, Scale } from "lucide-react";
+import { Dumbbell, Footprints, PersonStanding, Scale } from "lucide-react";
 import type { LogType } from "./LogSheetContext";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,13 @@ const TYPES: ReadonlyArray<{
     Icon: Scale,
     iconClass: "text-emerald-300",
   },
+  {
+    type: "gym",
+    label: "Gym",
+    hint: "Duration + activity",
+    Icon: Dumbbell,
+    iconClass: "text-amber-300",
+  },
 ];
 
 export function LogTypeCards({
@@ -40,7 +47,7 @@ export function LogTypeCards({
   onSelect: (t: LogType) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-2 gap-2.5">
       {TYPES.map(({ type, label, hint, Icon, iconClass }) => (
         <button
           key={type}

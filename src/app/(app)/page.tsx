@@ -41,6 +41,13 @@ const SECTIONS: Array<{
     href: "/weight",
     description: "Loss % from baseline",
   },
+  {
+    category: "gym",
+    title: "Gym",
+    emoji: "🏋️",
+    href: "/gym",
+    description: "All-time cumulative minutes",
+  },
 ];
 
 export default async function HomePage() {
@@ -48,16 +55,18 @@ export default async function HomePage() {
   const { data: auth } = await supabase.auth.getUser();
   const myId = auth.user?.id;
 
-  const [stepsRows, runningRows, weightRows] = await Promise.all([
+  const [stepsRows, runningRows, weightRows, gymRows] = await Promise.all([
     fetchAllTimeLeaderboard("steps"),
     fetchAllTimeLeaderboard("running"),
     fetchAllTimeLeaderboard("weight"),
+    fetchAllTimeLeaderboard("gym"),
   ]);
 
   const buckets: Record<CategoryKey, LeaderRow[]> = {
     steps: stepsRows,
     running: runningRows,
     weight: weightRows,
+    gym: gymRows,
   };
 
   return (

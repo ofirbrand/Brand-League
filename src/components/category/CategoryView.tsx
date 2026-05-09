@@ -49,6 +49,13 @@ const CONFIG: Record<CategoryKey, CategoryConfig> = {
     description: "Loss % from registration baseline",
     hasWeekly: false,
   },
+  gym: {
+    category: "gym",
+    title: "Gym",
+    emoji: "🏋️",
+    description: "All-time cumulative minutes",
+    hasWeekly: true,
+  },
 };
 
 export async function CategoryView({ category }: { category: CategoryKey }) {
@@ -61,7 +68,8 @@ export async function CategoryView({ category }: { category: CategoryKey }) {
 
   const allTime = await fetchAllTimeLeaderboard(category);
   const weekly =
-    cfg.hasWeekly && (category === "steps" || category === "running")
+    cfg.hasWeekly &&
+    (category === "steps" || category === "running" || category === "gym")
       ? await fetchWeeklyLeaderboard(category, weekStart)
       : [];
 

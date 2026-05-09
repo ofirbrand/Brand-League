@@ -143,6 +143,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      gym_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          log_date: string;
+          duration_min: number;
+          activity: GymActivity;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          log_date: string;
+          duration_min: number;
+          activity: GymActivity;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          log_date?: string;
+          duration_min?: number;
+          activity?: GymActivity;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       v_weekly_step_totals: {
@@ -263,6 +290,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_weekly_gym_totals: {
+        Row: {
+          user_id: string;
+          week_start: string;
+          total_minutes: number;
+          session_count: number;
+        };
+        Relationships: [];
+      };
+      v_all_time_gym_totals: {
+        Row: {
+          user_id: string;
+          total_minutes: number;
+          session_count: number;
+        };
+        Relationships: [];
+      };
+      v_leaderboard_gym_all_time: {
+        Row: {
+          user_id: string;
+          nickname: string;
+          full_name: string;
+          avatar_emoji: string;
+          total_minutes: number;
+          session_count: number;
+          rk: number;
+        };
+        Relationships: [];
+      };
+      v_leaderboard_gym_weekly: {
+        Row: {
+          user_id: string;
+          nickname: string;
+          full_name: string;
+          avatar_emoji: string;
+          week_start: string;
+          total_minutes: number;
+          session_count: number;
+          rk: number;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       week_start_for: {
@@ -274,16 +343,21 @@ export type Database = {
         Returns: boolean;
       };
     };
-    Enums: Record<string, never>;
+    Enums: {
+      gym_activity: GymActivity;
+    };
     CompositeTypes: Record<string, never>;
   };
 };
+
+export type GymActivity = "gym" | "studio" | "other";
 
 // Convenient row aliases used throughout the app.
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type StepLog = Database["public"]["Tables"]["step_logs"]["Row"];
 export type RunLog = Database["public"]["Tables"]["run_logs"]["Row"];
 export type WeightLog = Database["public"]["Tables"]["weight_logs"]["Row"];
+export type GymLog = Database["public"]["Tables"]["gym_logs"]["Row"];
 export type AllowedEmail = Database["public"]["Tables"]["allowed_emails"]["Row"];
 
 export type StepLeaderboardRow =
@@ -292,7 +366,11 @@ export type RunLeaderboardRow =
   Database["public"]["Views"]["v_leaderboard_run_all_time"]["Row"];
 export type WeightLeaderboardRow =
   Database["public"]["Views"]["v_leaderboard_weight_all_time"]["Row"];
+export type GymLeaderboardRow =
+  Database["public"]["Views"]["v_leaderboard_gym_all_time"]["Row"];
 export type WeeklyStepRow =
   Database["public"]["Views"]["v_leaderboard_steps_weekly"]["Row"];
 export type WeeklyRunRow =
   Database["public"]["Views"]["v_leaderboard_run_weekly"]["Row"];
+export type WeeklyGymRow =
+  Database["public"]["Views"]["v_leaderboard_gym_weekly"]["Row"];

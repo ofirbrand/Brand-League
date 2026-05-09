@@ -2,6 +2,7 @@
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type {
+  GymLogInput,
   RunLogInput,
   StepLogInput,
   WeightLogInput,
@@ -38,10 +39,19 @@ export async function upsertWeightLog(userId: string, input: WeightLogInput) {
   );
 }
 
+/**
+ * Inserts a gym log (append-only; multiple per day allowed).
+ */
+export async function insertGymLog(userId: string, input: GymLogInput) {
+  const supabase = createSupabaseBrowserClient();
+  return supabase.from("gym_logs").insert({ user_id: userId, ...input });
+}
+
 export type AnyLogInput =
   | { type: "run"; payload: RunLogInput }
   | { type: "walk"; payload: StepLogInput }
-  | { type: "weight"; payload: WeightLogInput };
+  | { type: "weight"; payload: WeightLogInput }
+  | { type: "gym"; payload: GymLogInput };
 
 export async function submitLog(userId: string, log: AnyLogInput) {
   switch (log.type) {
@@ -51,12 +61,17 @@ export async function submitLog(userId: string, log: AnyLogInput) {
       return upsertStepLog(userId, log.payload);
     case "weight":
       return upsertWeightLog(userId, log.payload);
+    case "gym":
+      return insertGymLog(userId, log.payload);
   }
 }
 
 /** Categories whose podiums could change after a log of this type. */
-export function categoriesAffectedBy(t: LogType): Array<"steps" | "running" | "weight"> {
+export function categoriesAffectedBy(
+  t: LogType,
+): Array<"steps" | "running" | "weight" | "gym"> {
   if (t === "walk") return ["steps"];
   if (t === "run") return ["running"];
+  if (t === "gym") return ["gym"];
   return ["weight"];
 }

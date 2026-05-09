@@ -16,13 +16,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 import {
+  GYM_ACTIVITIES,
+  gymLogSchema,
   runLogSchema,
   stepLogSchema,
   weightLogSchema,
+  type GymActivityValue,
+  type GymLogInput,
   type RunLogInput,
   type StepLogInput,
   type WeightLogInput,
 } from "@/lib/domain/validation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { todayInJerusalem } from "@/lib/domain/week";
 import {
   submitLog,
@@ -86,8 +97,22 @@ export function LogForm({ type, onChangeType, onSubmitted }: Props) {
       />
     );
   }
+  if (type === "weight") {
+    return (
+      <WeightFields
+        submitting={submitting}
+        userId={userId}
+        onChangeType={onChangeType}
+        onAfterSubmit={async () => {
+          onSubmitted();
+          router.refresh();
+        }}
+        setSubmitting={setSubmitting}
+      />
+    );
+  }
   return (
-    <WeightFields
+    <GymFields
       submitting={submitting}
       userId={userId}
       onChangeType={onChangeType}
@@ -231,6 +256,76 @@ function WeightFields(props: FieldsProps) {
   );
 }
 
+const GYM_ACTIVITY_LABEL: Record<GymActivityValue, string> = {
+  gym: "Gym",
+  studio: "Studio",
+  other: "Other",
+};
+
+function GymFields(props: FieldsProps) {
+  const today = useMemo(() => todayInJerusalem(), []);
+  const form = useForm<GymLogInput>({
+    resolver: zodResolver(gymLogSchema),
+    defaultValues: { log_date: today, activity: "gym" },
+  });
+
+  const activityValue = form.watch("activity") ?? "gym";
+
+  return (
+    <FormShell
+      label="Gym"
+      onChangeType={props.onChangeType}
+      onSubmit={form.handleSubmit(async (values) => {
+        await runSubmit(
+          props,
+          { type: "gym", payload: values },
+          () => form.reset({ log_date: today, activity: "gym" }),
+        );
+      })}
+      submitting={props.submitting}
+    >
+      <DateField form={form} />
+      <Field
+        label="Duration (min)"
+        error={form.formState.errors.duration_min?.message}
+      >
+        <Input
+          type="number"
+          step="1"
+          inputMode="numeric"
+          placeholder="45"
+          {...form.register("duration_min", { valueAsNumber: true })}
+        />
+      </Field>
+      <Field
+        label="Activity"
+        error={form.formState.errors.activity?.message as string | undefined}
+      >
+        <Select
+          value={activityValue}
+          onValueChange={(v) => {
+            if (!v) return;
+            form.setValue("activity", v as GymActivityValue, {
+              shouldValidate: true,
+            });
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Pick an activity" />
+          </SelectTrigger>
+          <SelectContent>
+            {GYM_ACTIVITIES.map((a) => (
+              <SelectItem key={a} value={a}>
+                {GYM_ACTIVITY_LABEL[a]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+    </FormShell>
+  );
+}
+
 // =====================================================================
 // Submit pipeline
 // =====================================================================
@@ -287,7 +382,10 @@ function messageFor(log: AnyLogInput): string {
   if (log.type === "walk") {
     return `👟 Logged ${log.payload.steps.toLocaleString()} steps`;
   }
-  return `⚖️ Logged ${log.payload.weight_kg} kg`;
+  if (log.type === "weight") {
+    return `⚖️ Logged ${log.payload.weight_kg} kg`;
+  }
+  return `🏋️ Logged ${log.payload.duration_min} min of ${log.payload.activity}`;
 }
 
 // =====================================================================

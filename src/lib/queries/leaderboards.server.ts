@@ -2,17 +2,19 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { weightStatusOf } from "@/lib/domain/weight";
 
-export type CategoryKey = "steps" | "running" | "weight";
+export type CategoryKey = "steps" | "running" | "weight" | "gym";
 
 const VIEW_BY_CATEGORY = {
   steps: "v_leaderboard_steps_all_time",
   running: "v_leaderboard_run_all_time",
   weight: "v_leaderboard_weight_all_time",
+  gym: "v_leaderboard_gym_all_time",
 } as const;
 
 const WEEKLY_VIEW = {
   steps: "v_leaderboard_steps_weekly",
   running: "v_leaderboard_run_weekly",
+  gym: "v_leaderboard_gym_weekly",
 } as const;
 
 export type LeaderRow = {
@@ -24,6 +26,7 @@ export type LeaderRow = {
   total_steps?: number;
   total_km?: number;
   total_minutes?: number;
+  session_count?: number;
   baseline_weight_kg?: number;
   latest_weight_kg?: number | null;
   loss_pct?: number | null;
@@ -47,9 +50,9 @@ export async function fetchAllTimeLeaderboard(
   return (data ?? []) as LeaderRow[];
 }
 
-/** Weekly leaderboard rows for steps/running scoped to `weekStart` (YYYY-MM-DD). */
+/** Weekly leaderboard rows for steps/running/gym scoped to `weekStart` (YYYY-MM-DD). */
 export async function fetchWeeklyLeaderboard(
-  category: "steps" | "running",
+  category: "steps" | "running" | "gym",
   weekStart: string,
 ): Promise<LeaderRow[]> {
   const supabase = await createSupabaseServerClient();
@@ -74,6 +77,9 @@ export function displayValueOf(row: LeaderRow, category: CategoryKey): string {
   }
   if (category === "running") {
     return `${(row.total_km ?? 0).toFixed(1)} km`;
+  }
+  if (category === "gym") {
+    return `${(row.total_minutes ?? 0).toLocaleString()} min`;
   }
   if (row.loss_pct == null) return "—";
   return `${row.loss_pct.toFixed(1)}%`;

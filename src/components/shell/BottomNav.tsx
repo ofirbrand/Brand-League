@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Footprints, PersonStanding, Scale, Trophy, User } from "lucide-react";
+import {
+  Dumbbell,
+  Footprints,
+  PersonStanding,
+  Scale,
+  Trophy,
+  User,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -10,6 +17,7 @@ const TABS = [
   { href: "/steps", label: "Steps", icon: Footprints },
   { href: "/running", label: "Running", icon: PersonStanding },
   { href: "/weight", label: "Weight", icon: Scale },
+  { href: "/gym", label: "Gym", icon: Dumbbell },
   { href: "/profile", label: "Profile", icon: User },
 ] as const;
 
@@ -21,7 +29,7 @@ export function BottomNav() {
       aria-label="Primary"
       className="fixed bottom-0 inset-x-0 z-40 border-t bg-background/85 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-6">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);

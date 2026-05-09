@@ -25,12 +25,23 @@ const KIND_META = {
   step: { emoji: "👟", label: "Steps" },
   run: { emoji: "🏃", label: "Run" },
   weight: { emoji: "⚖️", label: "Weight" },
+  gym: { emoji: "🏋️", label: "Gym" },
 } as const;
+
+const FILTER_LABEL: Record<"all" | "step" | "run" | "weight" | "gym", string> = {
+  all: "All",
+  step: "Steps",
+  run: "Runs",
+  weight: "Weight",
+  gym: "Gym",
+};
 
 export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [filter, setFilter] = useState<"all" | "step" | "run" | "weight">("all");
+  const [filter, setFilter] = useState<
+    "all" | "step" | "run" | "weight" | "gym"
+  >("all");
 
   const visible = rows.filter((r) => filter === "all" || r.kind === filter);
 
@@ -47,6 +58,9 @@ export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
       error = res.error;
     } else if (row.kind === "run") {
       const res = await supabase.from("run_logs").delete().eq("id", row.id);
+      error = res.error;
+    } else if (row.kind === "gym") {
+      const res = await supabase.from("gym_logs").delete().eq("id", row.id);
       error = res.error;
     } else {
       const res = await supabase
@@ -68,7 +82,7 @@ export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5">
-        {(["all", "run", "step", "weight"] as const).map((k) => (
+        {(["all", "run", "step", "weight", "gym"] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -80,7 +94,7 @@ export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
                 : "bg-card/50 text-muted-foreground hover:bg-card",
             )}
           >
-            {k === "all" ? "All" : k === "step" ? "Steps" : k === "run" ? "Runs" : "Weight"}
+            {FILTER_LABEL[k]}
           </button>
         ))}
       </div>
@@ -96,7 +110,9 @@ export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
               key={
                 row.kind === "run"
                   ? `run-${row.id}`
-                  : `${row.kind}-${row.user_id}-${row.log_date}`
+                  : row.kind === "gym"
+                    ? `gym-${row.id}`
+                    : `${row.kind}-${row.user_id}-${row.log_date}`
               }
               className="flex items-center gap-3 bg-card/40 px-3 py-2.5"
             >
@@ -150,5 +166,6 @@ function summary(row: ActivityRow): string {
   if (row.kind === "step") return `${row.steps.toLocaleString()} steps`;
   if (row.kind === "run")
     return `${row.distance_km.toFixed(1)} km · ${row.duration_min} min`;
+  if (row.kind === "gym") return `${row.duration_min} min · ${row.activity}`;
   return `${row.weight_kg.toFixed(1)} kg`;
 }

@@ -2,12 +2,13 @@
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export type CategoryKey = "steps" | "running" | "weight";
+export type CategoryKey = "steps" | "running" | "weight" | "gym";
 
 const VIEW_BY_CATEGORY = {
   steps: "v_leaderboard_steps_all_time",
   running: "v_leaderboard_run_all_time",
   weight: "v_leaderboard_weight_all_time",
+  gym: "v_leaderboard_gym_all_time",
 } as const;
 
 /**

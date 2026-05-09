@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
+  GymLog,
   Profile,
   RunLog,
   StepLog,
@@ -16,6 +17,7 @@ export type MyAllRanks = {
   steps: { rk: number; total: number } | null;
   running: { rk: number; total: number } | null;
   weight: { rk: number; loss_pct: number | null; awaiting: boolean } | null;
+  gym: { rk: number; total_minutes: number } | null;
 };
 
 export async function fetchMyProfile(userId: string): Promise<Profile | null> {
@@ -31,7 +33,7 @@ export async function fetchMyProfile(userId: string): Promise<Profile | null> {
 
 export async function fetchMyRanks(userId: string): Promise<MyAllRanks> {
   const supabase = await createSupabaseServerClient();
-  const [stepsRow, runningRow, weightRow] = await Promise.all([
+  const [stepsRow, runningRow, weightRow, gymRow] = await Promise.all([
     supabase
       .from("v_leaderboard_steps_all_time")
       .select("rk, total_steps")
@@ -45,6 +47,11 @@ export async function fetchMyRanks(userId: string): Promise<MyAllRanks> {
     supabase
       .from("v_leaderboard_weight_all_time")
       .select("rk, loss_pct, latest_weight_kg, baseline_weight_kg")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("v_leaderboard_gym_all_time")
+      .select("rk, total_minutes")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
@@ -63,13 +70,20 @@ export async function fetchMyRanks(userId: string): Promise<MyAllRanks> {
           awaiting: weightRow.data.latest_weight_kg == null,
         }
       : null,
+    gym: gymRow.data
+      ? {
+          rk: gymRow.data.rk,
+          total_minutes: Number(gymRow.data.total_minutes ?? 0),
+        }
+      : null,
   };
 }
 
 type WeeklyView =
   | "v_weekly_step_totals"
   | "v_weekly_run_totals"
-  | "v_weekly_weight_avg";
+  | "v_weekly_weight_avg"
+  | "v_weekly_gym_totals";
 
 /**
  * Per-user weekly series + per-week family average.
@@ -113,7 +127,7 @@ async function fetchSeries<T extends { user_id: string; week_start: string }>(
 
 export async function fetchTrendData(userId: string) {
   const supabase = await createSupabaseServerClient();
-  const [steps, running, weight] = await Promise.all([
+  const [steps, running, weight, gym] = await Promise.all([
     fetchSeries<{
       user_id: string;
       week_start: string;
@@ -135,21 +149,29 @@ export async function fetchTrendData(userId: string) {
     }>(supabase, "v_weekly_weight_avg", userId, (r) =>
       r.loss_pct == null ? null : Number(r.loss_pct),
     ),
+    fetchSeries<{
+      user_id: string;
+      week_start: string;
+      total_minutes: number;
+    }>(supabase, "v_weekly_gym_totals", userId, (r) =>
+      Number(r.total_minutes ?? 0),
+    ),
   ]);
-  return { steps, running, weight };
+  return { steps, running, weight, gym };
 }
 
 export type ActivityRow =
   | ({ kind: "step" } & StepLog)
   | ({ kind: "run" } & RunLog)
-  | ({ kind: "weight" } & WeightLog);
+  | ({ kind: "weight" } & WeightLog)
+  | ({ kind: "gym" } & GymLog);
 
 export async function fetchMyActivity(
   userId: string,
   limit = 50,
 ): Promise<ActivityRow[]> {
   const supabase = await createSupabaseServerClient();
-  const [steps, runs, weights] = await Promise.all([
+  const [steps, runs, weights, gyms] = await Promise.all([
     supabase
       .from("step_logs")
       .select("*")
@@ -169,12 +191,20 @@ export async function fetchMyActivity(
       .eq("user_id", userId)
       .order("log_date", { ascending: false })
       .limit(limit),
+    supabase
+      .from("gym_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("log_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit),
   ]);
 
   const out: ActivityRow[] = [];
   for (const r of steps.data ?? []) out.push({ kind: "step", ...r });
   for (const r of runs.data ?? []) out.push({ kind: "run", ...r });
   for (const r of weights.data ?? []) out.push({ kind: "weight", ...r });
+  for (const r of gyms.data ?? []) out.push({ kind: "gym", ...r });
 
   out.sort((a, b) => (a.log_date < b.log_date ? 1 : -1));
   return out.slice(0, limit);

@@ -41,9 +41,23 @@ export const weightLogSchema = z.object({
     .max(300, "Above 300 kg seems off"),
 });
 
+export const GYM_ACTIVITIES = ["gym", "studio", "other"] as const;
+export type GymActivityValue = (typeof GYM_ACTIVITIES)[number];
+
+export const gymLogSchema = z.object({
+  log_date: dateSchema,
+  duration_min: z
+    .number({ message: "Duration required" })
+    .int("Whole minutes please")
+    .min(1, "At least 1 minute")
+    .max(600, "Max 10 hours"),
+  activity: z.enum(GYM_ACTIVITIES, { message: "Pick an activity" }),
+});
+
 export type StepLogInput = z.infer<typeof stepLogSchema>;
 export type RunLogInput = z.infer<typeof runLogSchema>;
 export type WeightLogInput = z.infer<typeof weightLogSchema>;
+export type GymLogInput = z.infer<typeof gymLogSchema>;
 
 /** Profile input used at signup. Re-checked on the server via insert CHECKs. */
 export const signupProfileSchema = z.object({

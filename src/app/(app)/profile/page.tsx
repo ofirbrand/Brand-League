@@ -88,6 +88,9 @@ export default async function ProfilePage() {
             showZeroBaseline
           />
         </ChartCard>
+        <ChartCard title="Gym minutes per week" emoji="🏋️">
+          <TrendChart series={trends.gym} valueFormat="integer" />
+        </ChartCard>
       </div>
 
       {/* Activity history */}

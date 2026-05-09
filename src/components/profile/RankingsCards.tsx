@@ -1,5 +1,5 @@
 import type { MyAllRanks } from "@/lib/queries/profile.server";
-import { Footprints, PersonStanding, Scale } from "lucide-react";
+import { Dumbbell, Footprints, PersonStanding, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PODIUM_TINT = (rk?: number | null) =>
@@ -13,7 +13,7 @@ const PODIUM_TINT = (rk?: number | null) =>
 
 export function RankingsCards({ ranks }: { ranks: MyAllRanks }) {
   return (
-    <div className="grid grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
       <Card
         Icon={Footprints}
         label="Steps"
@@ -42,6 +42,16 @@ export function RankingsCards({ ranks }: { ranks: MyAllRanks }) {
             : ranks.weight?.loss_pct == null
               ? "—"
               : `${ranks.weight.loss_pct.toFixed(1)}%`
+        }
+      />
+      <Card
+        Icon={Dumbbell}
+        label="Gym"
+        rk={ranks.gym?.rk}
+        sub={
+          ranks.gym
+            ? `${ranks.gym.total_minutes.toLocaleString()} min`
+            : "no data"
         }
       />
     </div>

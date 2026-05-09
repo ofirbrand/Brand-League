@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-export type LogType = "run" | "walk" | "weight";
+export type LogType = "run" | "walk" | "weight" | "gym";
 
 type LogSheetState = {
   isOpen: boolean;
