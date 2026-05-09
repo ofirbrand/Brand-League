@@ -35,6 +35,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      app_settings: {
+        Row: {
+          key: string;
+          label: string;
+          value_timestamptz: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          label: string;
+          value_timestamptz: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          label?: string;
+          value_timestamptz?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           user_id: string;
@@ -359,6 +383,7 @@ export type RunLog = Database["public"]["Tables"]["run_logs"]["Row"];
 export type WeightLog = Database["public"]["Tables"]["weight_logs"]["Row"];
 export type GymLog = Database["public"]["Tables"]["gym_logs"]["Row"];
 export type AllowedEmail = Database["public"]["Tables"]["allowed_emails"]["Row"];
+export type AppSetting = Database["public"]["Tables"]["app_settings"]["Row"];
 
 export type StepLeaderboardRow =
   Database["public"]["Views"]["v_leaderboard_steps_all_time"]["Row"];

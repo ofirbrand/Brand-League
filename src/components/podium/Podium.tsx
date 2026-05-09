@@ -63,11 +63,22 @@ export function Podium({ byRank }: PodiumProps) {
             )}
           >
             <div className="text-2xl">{medal}</div>
-            <div className="flex flex-col items-center gap-1.5 px-1">
+            <div
+              className={cn(
+                "flex flex-wrap items-end justify-center px-1",
+                winners.length > 1 ? "gap-x-1 gap-y-1" : "gap-1.5",
+              )}
+            >
               {empty ? (
                 <GhostWinner />
               ) : (
-                winners.map((w) => <Winner key={w.user_id} entry={w} />)
+                winners.map((w) => (
+                  <Winner
+                    key={w.user_id}
+                    entry={w}
+                    compact={winners.length > 1}
+                  />
+                ))
               )}
             </div>
             <div
@@ -87,21 +98,36 @@ export function Podium({ byRank }: PodiumProps) {
   );
 }
 
-function Winner({ entry }: { entry: PodiumEntry }) {
+function Winner({
+  entry,
+  compact = false,
+}: {
+  entry: PodiumEntry;
+  compact?: boolean;
+}) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 transition-colors",
+        "flex flex-col items-center gap-0.5 rounded-xl transition-colors",
+        compact ? "px-1 py-0.5" : "px-2 py-1",
         entry.is_you && "bg-you/15 ring-1 ring-you",
       )}
     >
-      <div className="text-3xl leading-none">{entry.avatar_emoji}</div>
-      <div className="max-w-[80px] truncate text-[11px] font-bold">
+      <div className={cn("leading-none", compact ? "text-xl" : "text-3xl")}>
+        {entry.avatar_emoji}
+      </div>
+      <div
+        className={cn(
+          "truncate font-bold",
+          compact ? "max-w-[52px] text-[10px]" : "max-w-[80px] text-[11px]",
+        )}
+      >
         {entry.is_you ? "You" : entry.nickname}
       </div>
       <div
         className={cn(
-          "text-[10px] font-mono",
+          "font-mono",
+          compact ? "text-[9px]" : "text-[10px]",
           entry.is_awaiting
             ? "text-muted-foreground"
             : entry.no_medal

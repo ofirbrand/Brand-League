@@ -11,7 +11,9 @@ import {
 import { Podium, type PodiumEntry } from "@/components/podium/Podium";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { fetchCompetitionEnd } from "@/lib/queries/app-settings.server";
 import { HomeMountConfetti } from "./HomeMountConfetti";
+import { CompetitionCountdown } from "./CompetitionCountdown";
 
 const SECTIONS: Array<{
   category: CategoryKey;
@@ -55,12 +57,14 @@ export default async function HomePage() {
   const { data: auth } = await supabase.auth.getUser();
   const myId = auth.user?.id;
 
-  const [stepsRows, runningRows, weightRows, gymRows] = await Promise.all([
-    fetchAllTimeLeaderboard("steps"),
-    fetchAllTimeLeaderboard("running"),
-    fetchAllTimeLeaderboard("weight"),
-    fetchAllTimeLeaderboard("gym"),
-  ]);
+  const [stepsRows, runningRows, weightRows, gymRows, competitionEnd] =
+    await Promise.all([
+      fetchAllTimeLeaderboard("steps"),
+      fetchAllTimeLeaderboard("running"),
+      fetchAllTimeLeaderboard("weight"),
+      fetchAllTimeLeaderboard("gym"),
+      fetchCompetitionEnd(),
+    ]);
 
   const buckets: Record<CategoryKey, LeaderRow[]> = {
     steps: stepsRows,
@@ -78,6 +82,11 @@ export default async function HomePage() {
           The Brand Sport League
         </h1>
       </header>
+
+      <CompetitionCountdown
+        label={competitionEnd.label}
+        endAtIso={competitionEnd.endAtIso}
+      />
 
       {SECTIONS.map((s) => {
         const podium = buildPodium(buckets[s.category], s.category, myId);
