@@ -43,8 +43,12 @@ import {
 import { fetchMyAllTimeRank } from "@/lib/queries/leaderboards";
 import { celebrate } from "@/lib/confetti";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useThinking } from "@/components/shell/ThinkingProvider";
 import type { LogType } from "./LogSheetContext";
-import { authErrorMessage } from "@/lib/auth/errors";
+import {
+  authErrorMessage,
+  STEPS_PAST_DAY_LOCKED_MESSAGE,
+} from "@/lib/auth/errors";
 
 type Props = {
   type: LogType;
@@ -54,6 +58,7 @@ type Props = {
 
 export function LogForm({ type, onChangeType, onSubmitted }: Props) {
   const router = useRouter();
+  const thinking = useThinking();
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -69,60 +74,22 @@ export function LogForm({ type, onChangeType, onSubmitted }: Props) {
     };
   }, []);
 
-  if (type === "run") {
-    return (
-      <RunFields
-        submitting={submitting}
-        userId={userId}
-        onChangeType={onChangeType}
-        onAfterSubmit={async () => {
-          onSubmitted();
-          router.refresh();
-        }}
-        setSubmitting={setSubmitting}
-      />
-    );
-  }
-  if (type === "walk") {
-    return (
-      <WalkFields
-        submitting={submitting}
-        userId={userId}
-        onChangeType={onChangeType}
-        onAfterSubmit={async () => {
-          onSubmitted();
-          router.refresh();
-        }}
-        setSubmitting={setSubmitting}
-      />
-    );
-  }
-  if (type === "weight") {
-    return (
-      <WeightFields
-        submitting={submitting}
-        userId={userId}
-        onChangeType={onChangeType}
-        onAfterSubmit={async () => {
-          onSubmitted();
-          router.refresh();
-        }}
-        setSubmitting={setSubmitting}
-      />
-    );
-  }
-  return (
-    <GymFields
-      submitting={submitting}
-      userId={userId}
-      onChangeType={onChangeType}
-      onAfterSubmit={async () => {
-        onSubmitted();
-        router.refresh();
-      }}
-      setSubmitting={setSubmitting}
-    />
-  );
+  const sharedProps = {
+    submitting,
+    userId,
+    onChangeType,
+    setSubmitting,
+    thinking,
+    onAfterSubmit: async () => {
+      onSubmitted();
+      router.refresh();
+    },
+  };
+
+  if (type === "run") return <RunFields {...sharedProps} />;
+  if (type === "walk") return <WalkFields {...sharedProps} />;
+  if (type === "weight") return <WeightFields {...sharedProps} />;
+  return <GymFields {...sharedProps} />;
 }
 
 // =====================================================================
@@ -135,6 +102,7 @@ type FieldsProps = {
   userId: string | null;
   onChangeType: () => void;
   onAfterSubmit: () => Promise<void>;
+  thinking: { show: () => void; hide: () => void };
 };
 
 function RunFields(props: FieldsProps) {
@@ -192,11 +160,37 @@ function WalkFields(props: FieldsProps) {
     defaultValues: { log_date: today },
   });
 
+  const selectedDate = form.watch("log_date") ?? today;
+  const isPastDay = selectedDate < today;
+
   return (
     <FormShell
       label="Walk"
       onChangeType={props.onChangeType}
       onSubmit={form.handleSubmit(async (values) => {
+        // Past days are first-time-only for steps. Preflight before submit so
+        // the user gets the friendly message instead of a DB error toast.
+        if (values.log_date < today) {
+          if (!props.userId) {
+            toast.error("Not signed in.");
+            return;
+          }
+          const supabase = createSupabaseBrowserClient();
+          const { data, error } = await supabase
+            .from("step_logs")
+            .select("user_id")
+            .eq("user_id", props.userId)
+            .eq("log_date", values.log_date)
+            .maybeSingle();
+          if (error) {
+            toast.error(authErrorMessage(error.message));
+            return;
+          }
+          if (data) {
+            toast.error(STEPS_PAST_DAY_LOCKED_MESSAGE);
+            return;
+          }
+        }
         await runSubmit(
           props,
           { type: "walk", payload: values },
@@ -206,7 +200,7 @@ function WalkFields(props: FieldsProps) {
       submitting={props.submitting}
     >
       <DateField form={form} />
-      <Field label="Steps today" error={form.formState.errors.steps?.message}>
+      <Field label="Steps" error={form.formState.errors.steps?.message}>
         <Input
           type="number"
           inputMode="numeric"
@@ -216,7 +210,9 @@ function WalkFields(props: FieldsProps) {
         />
       </Field>
       <p className="text-xs text-muted-foreground">
-        Re-logging today replaces your current daily total.
+        {isPastDay
+          ? "First-time entries only — past days lock once logged."
+          : "Re-logging today replaces your current daily total."}
       </p>
     </FormShell>
   );
@@ -340,39 +336,43 @@ async function runSubmit(
     return;
   }
   props.setSubmitting(true);
+  props.thinking.show();
 
-  // Snapshot ranks BEFORE the write so we can detect a podium-move.
-  const affected = categoriesAffectedBy(log.type);
-  const before = await Promise.all(
-    affected.map((c) => fetchMyAllTimeRank(props.userId!, c)),
-  );
+  try {
+    // Snapshot ranks BEFORE the write so we can detect a podium-move.
+    const affected = categoriesAffectedBy(log.type);
+    const before = await Promise.all(
+      affected.map((c) => fetchMyAllTimeRank(props.userId!, c)),
+    );
 
-  const { error } = await submitLog(props.userId, log);
-  if (error) {
+    const { error } = await submitLog(props.userId, log);
+    if (error) {
+      toast.error(authErrorMessage(error.message));
+      return;
+    }
+
+    const after = await Promise.all(
+      affected.map((c) => fetchMyAllTimeRank(props.userId!, c)),
+    );
+
+    const movedToPodium = before.some((b, i) => {
+      const a = after[i];
+      if (a == null) return false;
+      if (a > 3) return false;
+      return b == null || b > 3;
+    });
+
+    toast.success(messageFor(log));
+    if (movedToPodium) {
+      toast.success("🥇 New podium spot!");
+      celebrate("podium");
+    }
+    resetForm();
+    await props.onAfterSubmit();
+  } finally {
     props.setSubmitting(false);
-    toast.error(authErrorMessage(error.message));
-    return;
+    props.thinking.hide();
   }
-
-  const after = await Promise.all(
-    affected.map((c) => fetchMyAllTimeRank(props.userId!, c)),
-  );
-
-  const movedToPodium = before.some((b, i) => {
-    const a = after[i];
-    if (a == null) return false;
-    if (a > 3) return false;
-    return b == null || b > 3;
-  });
-
-  toast.success(messageFor(log));
-  if (movedToPodium) {
-    toast.success("🥇 New podium spot!");
-    celebrate("podium");
-  }
-  resetForm();
-  props.setSubmitting(false);
-  await props.onAfterSubmit();
 }
 
 function messageFor(log: AnyLogInput): string {
