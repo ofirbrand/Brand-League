@@ -4,9 +4,15 @@
  * trigger raises 'PROFILE_FIELDS_REQUIRED' if metadata is missing.
  */
 
+export const STEPS_PAST_DAY_LOCKED_MESSAGE =
+  "Caught red-handed! 🕵️ This day's already logged.\nIf you're innocent, take it up with Ofir — head of the cheating department and supreme leader of this app.";
+
 export function authErrorMessage(message: string | undefined): string {
   if (!message) return "Something went wrong — try again.";
   const m = message.toUpperCase();
+  if (m.includes("STEPS_PAST_DAY_LOCKED")) {
+    return STEPS_PAST_DAY_LOCKED_MESSAGE;
+  }
   if (m.includes("EMAIL_NOT_WHITELISTED")) {
     return "This email isn't on the family list yet — ask Ofir to add you.";
   }

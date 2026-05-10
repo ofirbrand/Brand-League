@@ -19,6 +19,7 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ActivityRow } from "@/lib/queries/profile.server";
 import { authErrorMessage } from "@/lib/auth/errors";
+import { todayInJerusalem } from "@/lib/domain/week";
 import { cn } from "@/lib/utils";
 
 const KIND_META = {
@@ -43,6 +44,7 @@ export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
     "all" | "step" | "run" | "weight" | "gym"
   >("all");
 
+  const today = todayInJerusalem();
   const visible = rows.filter((r) => filter === "all" || r.kind === filter);
 
   async function onDelete(row: ActivityRow) {
@@ -105,57 +107,69 @@ export function ActivityHistory({ rows }: { rows: ActivityRow[] }) {
         </div>
       ) : (
         <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border">
-          {visible.map((row) => (
-            <li
-              key={
-                row.kind === "run"
-                  ? `run-${row.id}`
-                  : row.kind === "gym"
-                    ? `gym-${row.id}`
-                    : `${row.kind}-${row.user_id}-${row.log_date}`
-              }
-              className="flex items-center gap-3 bg-card/40 px-3 py-2.5"
-            >
-              <div className="text-2xl">{KIND_META[row.kind].emoji}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium">
-                  {KIND_META[row.kind].label} ·{" "}
-                  <span className="font-normal text-muted-foreground">
-                    {format(new Date(`${row.log_date}T12:00:00Z`), "EEE, MMM d")}
+          {visible.map((row) => {
+            const stepLocked = row.kind === "step" && row.log_date < today;
+            return (
+              <li
+                key={
+                  row.kind === "run"
+                    ? `run-${row.id}`
+                    : row.kind === "gym"
+                      ? `gym-${row.id}`
+                      : `${row.kind}-${row.user_id}-${row.log_date}`
+                }
+                className="flex items-center gap-3 bg-card/40 px-3 py-2.5"
+              >
+                <div className="text-2xl">{KIND_META[row.kind].emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">
+                    {KIND_META[row.kind].label} ·{" "}
+                    <span className="font-normal text-muted-foreground">
+                      {format(new Date(`${row.log_date}T12:00:00Z`), "EEE, MMM d")}
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono text-gold">
+                    {summary(row)}
+                  </div>
+                </div>
+                {stepLocked ? (
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                    title="Past-day step entries can't be edited or deleted."
+                  >
+                    Locked
                   </span>
-                </div>
-                <div className="text-xs font-mono text-gold">
-                  {summary(row)}
-                </div>
-              </div>
-              <AlertDialog>
-                <AlertDialogTrigger
-                  className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  aria-label="Delete entry"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This rebases the leaderboard. There&apos;s no undo.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={isPending}
-                      onClick={() => onDelete(row)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                ) : (
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Delete entry"
                     >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </li>
-          ))}
+                      <Trash2 className="h-4 w-4" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This rebases the leaderboard. There&apos;s no undo.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          disabled={isPending}
+                          onClick={() => onDelete(row)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
