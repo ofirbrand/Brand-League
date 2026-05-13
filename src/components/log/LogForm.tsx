@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm, type UseFormReturn } from "react-hook-form";
+import {
+  Controller,
+  useForm,
+  type Control,
+  type FieldValues,
+  type Path,
+  type UseFormReturn,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { CalendarIcon, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 
 import {
   GYM_ACTIVITIES,
@@ -446,43 +449,41 @@ function Field({
   );
 }
 
-function DateField<TForm extends { log_date: string }>({
+function DateField<TForm extends FieldValues & { log_date: string }>({
   form,
 }: {
   form: UseFormReturn<TForm>;
 }) {
   const today = useMemo(() => todayInJerusalem(), []);
-  // Cast through unknown to satisfy generic field name typing for log_date.
-  const value = form.watch("log_date" as never) as unknown as string;
 
+  // Native <input type="date"> by design: a portaled Popover/Calendar inside
+  // the vaul Drawer (modal Radix Dialog) gets dismissed by the dialog's
+  // pointer-down-outside handler the moment the user taps a day cell, so
+  // non-today dates could never actually be selected. Native pickers also
+  // give us familiar iOS/Android wheels for free.
+  //
+  // We deliberately use a plain <input> + Controller rather than base-ui's
+  // <Input> + register(): base-ui wraps the element with its own ref/onChange
+  // chain (FieldControl) which has masked react-hook-form's default-value
+  // injection in this app. Controller owns the value explicitly, so the form
+  // state and the rendered input stay in lock-step.
   return (
-    <Field label="Date" error={form.formState.errors.log_date?.message as string}>
-      <Popover>
-        <PopoverTrigger
-          className={cn(
-            "inline-flex w-full items-center rounded-md border border-input bg-background px-3 py-2 text-left text-sm font-normal shadow-xs transition-colors hover:bg-accent",
-            !value && "text-muted-foreground",
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(new Date(`${value}T12:00:00Z`), "PPP") : "Pick a date"}
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={value ? new Date(`${value}T12:00:00Z`) : undefined}
-            onSelect={(d) => {
-              if (!d) return;
-              const iso = format(d, "yyyy-MM-dd");
-              form.setValue("log_date" as never, iso as never, {
-                shouldValidate: true,
-              });
-            }}
-            disabled={{ after: new Date(`${today}T23:59:59Z`) }}
-            captionLayout="dropdown"
+    <Controller
+      control={form.control as Control<FieldValues>}
+      name={"log_date" as Path<FieldValues>}
+      render={({ field, fieldState }) => (
+        <Field label="Date" error={fieldState.error?.message}>
+          <input
+            type="date"
+            max={today}
+            value={(field.value as string | undefined) ?? today}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            ref={field.ref}
+            className="h-9 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert"
           />
-        </PopoverContent>
-      </Popover>
-    </Field>
+        </Field>
+      )}
+    />
   );
 }
